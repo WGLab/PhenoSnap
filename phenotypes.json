@@ -1,0 +1,171 @@
+{
+  "id": "phenopacket_20260220_115237",
+  "phenotypicFeatures": [
+    {
+      "type": {
+        "id": "HP:0001263",
+        "label": "Global developmental delay"
+      },
+      "description": "global developmental delay",
+      "excluded": false,
+      "onset": {
+        "age": {
+          "iso8601duration": "P14M"
+        }
+      }
+    },
+    {
+      "type": {
+        "id": "HP:0002421",
+        "label": "Poor head control"
+      },
+      "description": "poor head control",
+      "excluded": false,
+      "onset": {
+        "age": {
+          "iso8601duration": "P14M"
+        }
+      }
+    },
+    {
+      "type": {
+        "id": "HP:0001252",
+        "label": "Hypotonia"
+      },
+      "description": "muscular hypotonia",
+      "excluded": false,
+      "onset": {
+        "age": {
+          "iso8601duration": "P14M"
+        }
+      }
+    },
+    {
+      "type": {
+        "id": "HP:0001552",
+        "label": "Barrel-shaped chest"
+      },
+      "description": "barrel-shaped chest",
+      "excluded": false,
+      "onset": {
+        "age": {
+          "iso8601duration": "P14M"
+        }
+      }
+    },
+    {
+      "type": {
+        "id": "HP:0000218",
+        "label": "High palate"
+      },
+      "description": "high-arched palate",
+      "excluded": false,
+      "onset": {
+        "age": {
+          "iso8601duration": "P14M"
+        }
+      }
+    },
+    {
+      "type": {
+        "id": "HP:0000154",
+        "label": "Wide mouth"
+      },
+      "description": "wide mouth",
+      "excluded": false,
+      "onset": {
+        "age": {
+          "iso8601duration": "P14M"
+        }
+      }
+    },
+    {
+      "type": {
+        "id": "HP:0001250",
+        "label": "Seizure"
+      },
+      "description": "seizures",
+      "excluded": true,
+      "onset": {
+        "age": {
+          "iso8601duration": "P14M"
+        }
+      }
+    },
+    {
+      "type": {
+        "id": "HP:0032316",
+        "label": "Family history"
+      },
+      "description": "Family history",
+      "excluded": false,
+      "onset": {
+        "age": {
+          "iso8601duration": "P14M"
+        }
+      }
+    },
+    {
+      "type": {
+        "id": "HP:0011675",
+        "label": "Arrhythmia"
+      },
+      "description": "arrhythmia",
+      "excluded": false,
+      "onset": {
+        "age": {
+          "iso8601duration": "P14M"
+        }
+      }
+    },
+    {
+      "type": {
+        "id": "HP:0000505",
+        "label": "Visual impairment"
+      },
+      "description": "impaired vision",
+      "excluded": false,
+      "onset": {
+        "age": {
+          "iso8601duration": "P14M"
+        }
+      }
+    }
+  ],
+  "metaData": {
+    "created": "2026-02-20T11:52:37.171517Z",
+    "createdBy": "phenotype-extractor",
+    "phenopacketSchemaVersion": "2.0",
+    "resources": [
+      {
+        "id": "hp",
+        "name": "Human Phenotype Ontology",
+        "url": "https://hpo.jax.org/",
+        "version": "unknown",
+        "namespacePrefix": "HP",
+        "iriPrefix": "http://purl.obolibrary.org/obo/HP_"
+      }
+    ],
+    "notes": [
+      "Family history: father - arrhythmia and impaired vision",
+      "Family history: father - arrhythmia and impaired vision"
+    ]
+  },
+  "medicalActions": [
+    {
+      "treatment": {
+        "agent": {
+          "id": "DRUG:PHYSICAL_EXAM",
+          "label": "physical exam"
+        }
+      }
+    }
+  ],
+  "subject": {
+    "timeAtEncounter": {
+      "age": {
+        "iso8601duration": "P14M"
+      }
+    }
+  }
+}
