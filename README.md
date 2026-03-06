@@ -1,8 +1,10 @@
-### Clinical phenotype extraction (local, HPO-based)
+### Clinical phenotype extraction (local, HPO-based) and VCF / ClinVar pathogenic lookup
 
-This small utility extracts **clinical phenotype mentions** from free text and maps them to **Human Phenotype Ontology (HPO)** terms using only **local resources** (no cloud-based LLMs or APIs).
+This repository provides two utilities:
 
-The output can be either a TSV file or a PhenoPacket JSON file (conforming to PhenoPacket Schema v2.0) containing the matched phenotypes, age of onset, family history, and medication information.
+1. **Phenotype extraction**: Extracts **clinical phenotype mentions** from free text and maps them to **Human Phenotype Ontology (HPO)** terms using only **local resources** (no cloud-based LLMs or APIs). Output can be a TSV file or a PhenoPacket JSON file (conforming to PhenoPacket Schema v2.0) with matched phenotypes, age of onset, family history, and medication information.
+
+2. **VCF / ClinVar pathogenic lookup**: Takes a **VCF file** (GRCh37 or GRCh38 coordinates), queries the **ClinVar** database via NCBI E-utilities, and outputs only variants annotated as **Pathogenic** or **Likely pathogenic**.
 
 ---
 
@@ -227,4 +229,59 @@ Example `phenotypes.json` structure:
 - **Medication extraction**: Detects common medication patterns but may miss less common drug names or misspelled medications.
 - **Negation detection**: Automatically detects negated phenotypes (e.g., "No history of seizures", "absence of", "denies") and marks them with `excluded: true` in the output. Negated phenotypes are still included in the output but clearly marked as excluded, consistent with PhenoPacket standard.
 - **PhenoPacket compliance**: The JSON output conforms to PhenoPacket Schema v2.0 and can be validated using PhenoPacket validation tools.
+
+---
+
+### 6. VCF / ClinVar pathogenic variant lookup
+
+The script **`vcf_clinvar_pathogenic.py`** reads a VCF file (GRCh37 or GRCh38), converts each variant to SPDI format, queries the **ClinVar** database via NCBI E-utilities, and writes only variants that are classified as **Pathogenic** or **Likely pathogenic** to a TSV file.
+
+**Dependencies:** The script uses the `requests` library (included in `requirements.txt`). No HPO or spaCy model is required for this script.
+
+#### Run the script
+
+```bash
+python vcf_clinvar_pathogenic.py --vcf input.vcf --out hits.tsv --assembly GRCh38
+```
+
+**Arguments:**
+
+- **`--vcf`** (required): Path to the input VCF file.
+- **`--out`** (required): Path to the output TSV file.
+- **`--assembly`**: Reference assembly: `GRCh38` (default) or `GRCh37`.
+
+**Example (Windows):**
+
+```powershell
+python vcf_clinvar_pathogenic.py --vcf variants.vcf --out clinvar_hits.tsv --assembly GRCh38
+```
+
+**Example (Linux/macOS):**
+
+```bash
+python vcf_clinvar_pathogenic.py --vcf variants.vcf --out clinvar_hits.tsv --assembly GRCh37
+```
+
+#### Output format
+
+The output is a tab-separated file with header:
+
+| Column           | Description                                      |
+|------------------|--------------------------------------------------|
+| CHROM            | Chromosome (from VCF)                            |
+| POS              | Position (1-based)                              |
+| REF              | Reference allele                                |
+| ALT              | Alternate allele                                 |
+| ClinVarID        | ClinVar variation ID                             |
+| Significance     | Clinical significance (e.g. Pathogenic, Likely pathogenic) |
+| ReviewStatus     | ClinVar review status                            |
+
+Only variants that have at least one ClinVar record with Pathogenic or Likely pathogenic significance are included.
+
+#### Notes and limitations (VCF / ClinVar script)
+
+- **Network required**: The script queries NCBI E-utilities (ClinVar) over the internet.
+- **Rate limiting**: Requests are throttled to about 3 per second to comply with NCBI usage guidelines; processing large VCFs can take time.
+- **SPDI-based lookup**: Variants are converted to SPDI (Sequence, Position, Deletion, Insertion) using RefSeq accessions for the chosen assembly. Unrecognized chromosomes are skipped.
+- **Multi-allelic sites**: Each alternate allele is queried separately.
 
