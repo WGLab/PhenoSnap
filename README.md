@@ -1,10 +1,12 @@
-### Clinical phenotype extraction (local, HPO-based) and VCF / ClinVar pathogenic lookup
+### ClinSnap: Clinical phenotype extraction, VCF / ClinVar pathogenic lookup, and digital twin state assembly
 
-This repository provides two utilities:
+This repository provides three utilities:
 
 1. **Phenotype extraction**: Extracts **clinical phenotype mentions** from free text and maps them to **Human Phenotype Ontology (HPO)** terms using only **local resources** (no cloud-based LLMs or APIs). Output can be a TSV file or a PhenoPacket JSON file (conforming to PhenoPacket Schema v2.0) with matched phenotypes, age of onset, family history, and medication information.
 
 2. **VCF / ClinVar pathogenic lookup**: Takes a **VCF file** (GRCh37 or GRCh38 coordinates), queries the **ClinVar** database via NCBI E-utilities, and outputs only variants annotated as **Pathogenic** or **Likely pathogenic**.
+
+3. **Digital twin state assembly**: Reads all available clinical data files (VCF, PhenoPacket JSON) from a designated patient directory and consolidates them into a single **digital twin state JSON file** representing the patient's current clinical picture.
 
 ---
 
@@ -77,7 +79,7 @@ print("Downloaded hp.obo successfully!")
 
 ---
 
-### 3. Run the extractor
+### 3. Phenotype extraction
 
 You can either pass a paragraph directly via `--text` or use an input file via `--input-file`.
 
@@ -117,7 +119,7 @@ python extract_phenotypes.py \
 
 ---
 
-### 4. Output formats
+### 4. Phenotype extraction output formats
 
 #### TSV Format (default)
 
@@ -218,7 +220,7 @@ Example `phenotypes.json` structure:
 
 ---
 
-### 5. Notes and limitations
+### 5. Phenotype extraction notes and limitations
 
 - **Local only**: the script uses spaCy NLP and a local HPO OBO file; no calls to remote LLMs or web APIs are made during extraction.
 - **NLP-based matching**: extraction uses spaCy's PhraseMatcher for accurate phrase matching against HPO labels and synonyms, with dependency parsing for negation detection.
@@ -227,7 +229,6 @@ Example `phenotypes.json` structure:
 - **Age of onset extraction**: Uses pattern matching to detect common age expressions (e.g., "14-month-old", "at age 2 years"). May not capture all variations.
 - **Family history extraction**: Basic pattern matching for common family history phrases. More complex family structures may require manual annotation.
 - **Medication extraction**: Detects common medication patterns but may miss less common drug names or misspelled medications.
-- **Negation detection**: Automatically detects negated phenotypes (e.g., "No history of seizures", "absence of", "denies") and marks them with `excluded: true` in the output. Negated phenotypes are still included in the output but clearly marked as excluded, consistent with PhenoPacket standard.
 - **PhenoPacket compliance**: The JSON output conforms to PhenoPacket Schema v2.0 and can be validated using PhenoPacket validation tools.
 
 ---
@@ -285,3 +286,91 @@ Only variants that have at least one ClinVar record with Pathogenic or Likely pa
 - **SPDI-based lookup**: Variants are converted to SPDI (Sequence, Position, Deletion, Insertion) using RefSeq accessions for the chosen assembly. Unrecognized chromosomes are skipped.
 - **Multi-allelic sites**: Each alternate allele is queried separately.
 
+---
+
+### 7. Digital twin state assembly
+
+The script **`rdmdt_assemble.py`** reads all available clinical data files from a designated patient directory and consolidates them into a single JSON file representing the current state of the patient's digital twin.
+
+**Dependencies:** No additional dependencies beyond the Python standard library are required.
+
+#### Run the script
+
+```bash
+python rdmdt_assemble.py --input-dir ./patient_data --out twin_state.json
+```
+
+**Arguments:**
+
+- **`--input-dir`** (required): Path to the patient data directory containing the latest clinical files.
+- **`--out`** (required): Path to the output JSON file.
+
+#### Supported input file types
+
+The script automatically detects files by extension within the input directory:
+
+| Extension | Data type | Source |
+|-----------|-----------|--------|
+| `*.vcf` | Genotype data (variants, reference assembly) | Whole-exome or whole-genome sequencing |
+| `*.json` | PhenoPacket (HPO terms, medications, family history) | ClinSnap phenotype extraction output |
+
+If multiple files of the same type exist, the last file (alphabetically sorted) is used. Components for which no file is found are set to `null` in the output, allowing the digital twin to be instantiated even when only partial data is available.
+
+#### Output format
+
+The output is a single JSON file with the following structure:
+
+```json
+{
+  "assembled_at": "2026-03-15T18:52:53.498742+00:00",
+  "genotype": {
+    "reference_assembly": "GRCh38",
+    "variants": [
+      {
+        "chrom": "chr6",
+        "pos": 65057613,
+        "ref": "C",
+        "alt": "T",
+        "genotype": "0/1"
+      }
+    ]
+  },
+  "phenotype": {
+    "created": "2026-02-20T11:52:37.171517Z",
+    "phenotypic_features": [
+      {
+        "hpo_id": "HP:0001263",
+        "hpo_label": "Global developmental delay",
+        "excluded": false,
+        "onset": "P14M"
+      }
+    ],
+    "medications": ["metoprolol"],
+    "notes": ["Family history: father - arrhythmia"],
+    "subject": {
+      "timeAtEncounter": {
+        "age": { "iso8601duration": "P14M" }
+      }
+    }
+  }
+}
+```
+
+#### Usage with PhenoSkill and GenoSkill
+
+In the AADT framework, the patient directory serves as the shared workspace for the digital twin. When PhenoSkill generates a new PhenoPacket file (Case Study 1) or GenoSkill detects a ClinVar variant reclassification and updates the VCF annotations (Case Study 2), the corresponding file in the patient directory is overwritten. Running `rdmdt_assemble.py` after any such update produces a new digital twin state reflecting the latest clinical picture.
+
+```bash
+# After PhenoSkill extracts new phenotypes
+python rdmdt_assemble.py --input-dir ./patient_data --out twin_state.json
+
+# After GenoSkill detects a ClinVar reclassification
+python rdmdt_assemble.py --input-dir ./patient_data --out twin_state.json
+```
+
+#### Notes and limitations (digital twin assembly)
+
+- **Local only**: The script reads files from disk and writes output locally. No network access is required.
+- **Last-file-wins**: If multiple files of the same type exist in the input directory, the last file (sorted alphabetically) is used. This supports the overwrite-based update model used by PhenoSkill and GenoSkill.
+- **Partial instantiation**: Missing data types result in `null` values in the output rather than errors, allowing the digital twin to be created with incomplete data.
+- **No validation**: The script does not validate the clinical correctness of input data. It assembles whatever files are present in the directory.
